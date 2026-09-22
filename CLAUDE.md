@@ -26,11 +26,14 @@ Sistema full stack onde escolas de uma rede de ensino abrem chamados de TI (impr
 ## 3. Stack
 
 - Monorepo com npm workspaces: `apps/api` e `apps/web`.
-- **API:** Node.js 20+, TypeScript, Express, Prisma, PostgreSQL 16, Zod (validação), bcrypt (hash de senha), jsonwebtoken, cookie-parser, cors, helmet.
-- **Web:** React + TypeScript (Vite), Tailwind CSS, React Router, TanStack Query, React Hook Form + Zod, Axios, Recharts.
+- **Runtime:** Node.js 24 (imagem Docker `node:24-alpine`).
+- **API:** TypeScript, Express, Prisma 7 (configuração em `prisma.config.ts`, driver adapter `@prisma/adapter-pg`), PostgreSQL 16, Zod (validação), bcrypt (hash de senha), jsonwebtoken, cookie-parser, cors, helmet. Em dev roda com `tsx watch`.
+- **Web:** React + TypeScript (Vite), Tailwind CSS v4 (plugin `@tailwindcss/vite`, sem `tailwind.config.js`), React Router, TanStack Query, React Hook Form + Zod, Axios, Recharts.
 - **Testes:** Vitest + Supertest (API). Banco de teste separado.
-- **Qualidade:** ESLint + Prettier, TypeScript em modo `strict`.
-- **Infra local:** Docker Compose com `db`, `api` e `web`. Tudo sobe com `docker compose up`.
+- **Qualidade:** ESLint (flat config) + Prettier, TypeScript em modo `strict`.
+- **Dependências de dev aprovadas:** `tsx`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `eslint-config-prettier` e os `@types` de express, cors, cookie-parser, jsonwebtoken, bcrypt e supertest.
+- **Infra local:** Docker Compose em modo dev com `db`, `api` e `web` (código montado por volume: API com `tsx watch`, web com Vite dev server). Tudo sobe com `docker compose up`.
+- **Dockerfiles:** API multi-stage (`dev` usado pelo Compose; `prod` com build compilado para o deploy). Web sem imagem de produção (deploy é na Vercel).
 - **Deploy:** front na Vercel; API + Postgres no Render ou Railway.
 - **Seed:** @faker-js/faker (locale pt_BR).
 
@@ -52,6 +55,8 @@ chamados-ti/
 ├── .env.example
 ├── apps/
 │   ├── api/
+│   │   ├── Dockerfile (multi-stage: dev e prod)
+│   │   ├── prisma.config.ts
 │   │   ├── prisma/ (schema.prisma, migrations/, seed.ts)
 │   │   ├── src/
 │   │   │   ├── modules/
@@ -63,6 +68,8 @@ chamados-ti/
 │   │   │   └── server.ts (só faz listen)
 │   │   └── tests/
 │   └── web/
+│       ├── Dockerfile (só dev)
+│       ├── vite.config.ts (Tailwind + proxy /api)
 │       └── src/
 │           ├── pages/ components/ hooks/ services/ contexts/ lib/
 │           └── main.tsx
@@ -176,7 +183,7 @@ model HistoricoChamado {
 
 ### Perfis e permissões
 - **SOLICITANTE** (diretor/secretário): abre chamados e acompanha os da SUA escola. Não muda status, não vê outras escolas, não acessa cadastros nem dashboard.
-- **TECNICO:** vê todos os chamados, assume, muda status, comenta, registra solução. Vê equipamentos (somente leitura).
+- **TECNICO:** vê todos os chamados, assume, muda status, comenta, registra solução. Vê equipamentos (somente leitura), incluindo detalhe e histórico de chamados de cada máquina.
 - **ADMIN:** tudo do técnico + CRUD de escolas, usuários, categorias e equipamentos + dashboard.
 
 Checar só o perfil NÃO basta. Todo acesso de solicitante a chamado filtra por `escolaId` do usuário logado no service (evitar IDOR). Acesso a recurso de outra escola retorna 404, não 403.
@@ -214,8 +221,8 @@ Prefixo `/api`. Respostas de lista paginadas: `{ dados, total, pagina, porPagina
 - `GET|POST /escolas`, `GET|PUT|DELETE /escolas/:id` (admin)
 - `GET|POST /usuarios`, `GET|PUT|DELETE /usuarios/:id` (admin)
 - `GET|POST /categorias`, `PUT|DELETE /categorias/:id` (GET liberado a todos logados; escrita só admin)
-- `GET|POST /equipamentos`, `GET|PUT|DELETE /equipamentos/:id` (escrita admin; GET técnico/admin; solicitante só lista os da sua escola, para o select de abertura)
-- `GET /equipamentos/:id/chamados` → histórico de defeitos da máquina
+- `GET|POST /equipamentos`, `GET|PUT|DELETE /equipamentos/:id` (escrita só admin; `GET /equipamentos` liberado a todos logados, mas solicitante só recebe os da sua escola, para o select de abertura; `GET /equipamentos/:id` só técnico/admin)
+- `GET /equipamentos/:id/chamados` → histórico de defeitos da máquina (só técnico/admin)
 - `POST /chamados`, `GET /chamados`, `GET /chamados/:id` (inclui histórico com nome do usuário)
 - `PATCH /chamados/:id/assumir`, `PATCH /chamados/:id/status`, `POST /chamados/:id/comentarios`
 - `GET /dashboard?de=&ate=&escolaId=` (admin)
@@ -226,8 +233,12 @@ Dashboard retorna: totais por status, chamados por escola, chamados por categori
 
 ### Autenticação
 - JWT com payload `{ sub, perfil, escolaId }`, expiração de 8h, assinado com `JWT_SECRET`.
-- Enviado em cookie httpOnly `token`. Em produção: `Secure` e `SameSite=None` (front e API em domínios diferentes). Em dev: `SameSite=Lax`.
-- CORS com `origin: process.env.CORS_ORIGIN` e `credentials: true`. Axios com `withCredentials: true`.
+- Enviado em cookie httpOnly `token`, sempre com `SameSite=Lax` e `Path=/`. Em produção também `Secure`.
+- Front e API ficam na **mesma origem** do ponto de vista do navegador, então o cookie é first-party:
+  - Dev: proxy do Vite encaminha `/api` para o container da API.
+  - Produção: rewrite da Vercel (`vercel.json`) encaminha `/api/*` para a URL da API no Render/Railway.
+- Axios usa `baseURL: '/api'` (sem URL absoluta da API no front).
+- CORS: como o navegador nunca chama a API em outra origem, o CORS não é necessário no fluxo normal. O middleware `cors` fica configurado de forma restritiva (`origin: process.env.CORS_ORIGIN`, `credentials: true`) apenas como salvaguarda; nunca usar `origin: '*'`.
 - 401 no front → limpar estado de auth e redirecionar para `/login`.
 
 ## 8. Fases (uma por vez, com minha aprovação entre elas)
@@ -235,8 +246,8 @@ Dashboard retorna: totais por status, chamados por escola, chamados por categori
 Cada fase só termina quando todos os itens de "Pronto quando" forem verdadeiros.
 
 ### Fase 0 — Setup
-Monorepo, TS strict nos dois apps, ESLint/Prettier, Tailwind configurado, Dockerfiles, `docker-compose.yml` (db com healthcheck; api só sobe com db saudável e roda `prisma migrate deploy` no start), `.env.example`, `.gitignore`, rota `GET /api/health`.
-**Pronto quando:** `docker compose up` sobe os três serviços, `/api/health` responde 200 e a página inicial do web abre.
+Monorepo, TS strict nos dois apps, ESLint/Prettier, Tailwind v4 configurado, Dockerfile da API (multi-stage) e do web (dev), `docker-compose.yml` em modo dev (db com healthcheck; api só sobe com db saudável e roda `prisma migrate deploy` no start), proxy `/api` no Vite, `.env.example`, `.gitignore`, rota `GET /api/health`. Prisma 7 com `prisma.config.ts`; `schema.prisma` só com `datasource` e `generator` (os models entram na Fase 1). Vitest + Supertest configurados com um teste de `GET /api/health`.
+**Pronto quando:** `docker compose up` sobe os três serviços, `/api/health` responde 200 (direto e via proxy do Vite), a página inicial do web abre e lint, typecheck e o teste de health passam.
 
 ### Fase 1 — Banco e seed
 Schema da seção 5, migration inicial, `seed.ts` com: 1 admin, 3 técnicos, 5 escolas (nomes realistas de escolas públicas brasileiras), 1 solicitante por escola, 8 categorias (Impressora, Rede/Internet, Computador, Projetor, Software, Periféricos, Telefonia, Outros), ~40 equipamentos e ~150 chamados nos últimos 6 meses com histórico COERENTE (gerar cada chamado simulando o fluxo de status em ordem cronológica; nada de RESOLVIDO sem técnico ou `resolvidoEm` antes de `abertoEm`). Alguns equipamentos devem concentrar mais defeitos para o dashboard ficar interessante. Senhas do seed documentadas no README.
@@ -267,7 +278,7 @@ Completar testes prioritários da API e criar workflow do GitHub Actions (lint +
 **Pronto quando:** pipeline verde.
 
 ### Fase 8 — Deploy e README
-Preparar para Render/Railway (build: `npm ci && npx prisma generate && npm run build`; start: `npx prisma migrate deploy && node dist/server.js`) e Vercel (`VITE_API_URL`, `vercel.json` com rewrite para `index.html`). Me guie passo a passo nas configurações que eu preciso fazer nos painéis.
+Preparar para Render/Railway (build: `npm ci && npx prisma generate && npm run build`; start: `npx prisma migrate deploy && node dist/server.js`) e Vercel (`vercel.json` com rewrite de `/api/*` para a URL da API e fallback das demais rotas para `index.html`). Me guie passo a passo nas configurações que eu preciso fazer nos painéis.
 README com: problema e contexto, screenshots, link do deploy, credenciais de teste por perfil, diagrama do banco, como rodar com Docker, decisões técnicas e trade-offs, aviso de cold start, e a seção "Próximos passos" (seção 9).
 
 ## 9. Fora do MVP (NÃO implementar; vai para "Próximos passos" no README)
