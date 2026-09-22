@@ -31,7 +31,8 @@ Sistema full stack onde escolas de uma rede de ensino abrem chamados de TI (impr
 - **Web:** React + TypeScript (Vite), Tailwind CSS v4 (plugin `@tailwindcss/vite`, sem `tailwind.config.js`), React Router, TanStack Query, React Hook Form + Zod, Axios, Recharts.
 - **Testes:** Vitest + Supertest (API). Banco de teste separado.
 - **Qualidade:** ESLint (flat config) + Prettier, TypeScript em modo `strict`.
-- **Dependências de dev aprovadas:** `tsx`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `eslint-config-prettier` e os `@types` de express, cors, cookie-parser, jsonwebtoken, bcrypt e supertest.
+- **Dependências de dev aprovadas:** `tsx`, `typescript-eslint`, `@eslint/js`, `globals`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `eslint-config-prettier`, `@vitejs/plugin-react` e os `@types` de node, express, cors, cookie-parser, jsonwebtoken, bcrypt e supertest.
+- **Versões fixadas:** TypeScript 6.0 (o typescript-eslint ainda não suporta o TS 7) e Prisma `^7` (o `latest` do npm aponta para um RC da v8).
 - **Infra local:** Docker Compose em modo dev com `db`, `api` e `web` (código montado por volume: API com `tsx watch`, web com Vite dev server). Tudo sobe com `docker compose up`.
 - **Dockerfiles:** API multi-stage (`dev` usado pelo Compose; `prod` com build compilado para o deploy). Web sem imagem de produção (deploy é na Vercel).
 - **Deploy:** front na Vercel; API + Postgres no Render ou Railway.
