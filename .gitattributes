@@ -1,0 +1,3 @@
+# Força LF no repositório e na cópia de trabalho: os containers Alpine
+# executam estes arquivos e quebram com CRLF.
+* text=auto eol=lf

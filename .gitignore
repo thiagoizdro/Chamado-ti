@@ -1,0 +1,24 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+coverage/
+
+# Cliente Prisma gerado
+apps/api/src/generated/
+
+# Variáveis de ambiente (nunca versionar segredos)
+.env
+.env.*
+!.env.example
+
+# Logs e sistema
+*.log
+.DS_Store
+Thumbs.db
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
