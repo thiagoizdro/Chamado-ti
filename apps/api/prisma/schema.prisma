@@ -1,0 +1,10 @@
+// Os models entram na Fase 1. A URL de conexão fica no prisma.config.ts.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
