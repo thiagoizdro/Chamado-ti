@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { categoriasRoutes } from './modules/categorias/categorias.routes.js';
+import { equipamentosRoutes } from './modules/equipamentos/equipamentos.routes.js';
 import { escolasRoutes } from './modules/escolas/escolas.routes.js';
 import { usuariosRoutes } from './modules/usuarios/usuarios.routes.js';
 
@@ -16,3 +17,4 @@ rotas.use('/auth', authRoutes);
 rotas.use('/escolas', escolasRoutes);
 rotas.use('/categorias', categoriasRoutes);
 rotas.use('/usuarios', usuariosRoutes);
+rotas.use('/equipamentos', equipamentosRoutes);

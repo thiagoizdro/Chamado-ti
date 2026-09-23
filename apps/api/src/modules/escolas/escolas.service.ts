@@ -33,6 +33,14 @@ export async function buscarPorId(id: number) {
   return escola;
 }
 
+// Usada por outros módulos antes de vincular algo (usuário, equipamento) a uma escola.
+export async function garantirEscolaAtiva(escolaId: number) {
+  const escola = await prisma.escola.findUnique({ where: { id: escolaId } });
+  if (!escola?.ativo) {
+    throw new AppError(422, 'Escola não encontrada ou inativa.', 'escolaId');
+  }
+}
+
 export function criar(dados: DadosEscola) {
   return traduzirUnicidade(() => prisma.escola.create({ data: dados }), inepDuplicado());
 }

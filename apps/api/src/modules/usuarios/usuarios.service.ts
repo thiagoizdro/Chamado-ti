@@ -5,6 +5,7 @@ import { prisma } from '../../lib/prisma.js';
 import { traduzirUnicidade } from '../../lib/prismaErros.js';
 import { whereAtivo } from '../../lib/schemas.js';
 import { gerarHashSenha } from '../../lib/senha.js';
+import { garantirEscolaAtiva } from '../escolas/escolas.service.js';
 import type {
   DadosAtualizarUsuario,
   DadosCriarUsuario,
@@ -57,13 +58,6 @@ export async function buscarPorId(id: number) {
     throw new AppError(404, 'Usuário não encontrado.');
   }
   return usuario;
-}
-
-async function garantirEscolaAtiva(escolaId: number) {
-  const escola = await prisma.escola.findUnique({ where: { id: escolaId } });
-  if (!escola?.ativo) {
-    throw new AppError(422, 'Escola não encontrada ou inativa.', 'escolaId');
-  }
 }
 
 export async function criar({ senha, ...dados }: DadosCriarUsuario) {
