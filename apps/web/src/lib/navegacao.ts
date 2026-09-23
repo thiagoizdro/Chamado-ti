@@ -1,5 +1,11 @@
 import type { Perfil } from '../types/usuario';
 
+// Grupos de perfis usados no menu e nas rotas (mesma fonte para os dois).
+export const SO_ADMIN: Perfil[] = ['ADMIN'];
+export const SO_TECNICO: Perfil[] = ['TECNICO'];
+export const EQUIPE_TECNICA: Perfil[] = ['TECNICO', 'ADMIN'];
+export const TODOS_OS_PERFIS: Perfil[] = ['SOLICITANTE', 'TECNICO', 'ADMIN'];
+
 // Para onde cada perfil vai depois do login (ou ao tentar abrir uma rota proibida).
 export const PAGINA_INICIAL: Record<Perfil, string> = {
   SOLICITANTE: '/chamados',
@@ -17,25 +23,17 @@ export type PaginaDoMenu = {
   caminho: string;
   rotulo: string;
   perfis: Perfil[];
-  // Fase do projeto em que a tela será construída (enquanto for provisória).
-  fase: number;
 };
 
-// Fonte única: o menu e as permissões das rotas saem desta lista,
-// então um item nunca aparece no menu para quem não pode abri-lo.
+// As rotas em router.tsx usam os mesmos grupos de perfis deste menu.
 export const PAGINAS_DO_MENU: PaginaDoMenu[] = [
-  { caminho: '/dashboard', rotulo: 'Dashboard', perfis: ['ADMIN'], fase: 6 },
-  { caminho: '/minha-fila', rotulo: 'Minha fila', perfis: ['TECNICO'], fase: 4 },
-  {
-    caminho: '/chamados',
-    rotulo: 'Chamados',
-    perfis: ['SOLICITANTE', 'TECNICO', 'ADMIN'],
-    fase: 4,
-  },
-  { caminho: '/equipamentos', rotulo: 'Equipamentos', perfis: ['TECNICO', 'ADMIN'], fase: 3 },
-  { caminho: '/escolas', rotulo: 'Escolas', perfis: ['ADMIN'], fase: 3 },
-  { caminho: '/usuarios', rotulo: 'Usuários', perfis: ['ADMIN'], fase: 3 },
-  { caminho: '/categorias', rotulo: 'Categorias', perfis: ['ADMIN'], fase: 3 },
+  { caminho: '/dashboard', rotulo: 'Dashboard', perfis: SO_ADMIN },
+  { caminho: '/minha-fila', rotulo: 'Minha fila', perfis: SO_TECNICO },
+  { caminho: '/chamados', rotulo: 'Chamados', perfis: TODOS_OS_PERFIS },
+  { caminho: '/equipamentos', rotulo: 'Equipamentos', perfis: EQUIPE_TECNICA },
+  { caminho: '/escolas', rotulo: 'Escolas', perfis: SO_ADMIN },
+  { caminho: '/usuarios', rotulo: 'Usuários', perfis: SO_ADMIN },
+  { caminho: '/categorias', rotulo: 'Categorias', perfis: SO_ADMIN },
 ];
 
 export function paginasDoPerfil(perfil: Perfil): PaginaDoMenu[] {
