@@ -204,7 +204,7 @@ RESOLVIDO       → (nenhuma; reabertura está fora do MVP)
 - Transição inválida → 422 com mensagem clara.
 - "Assumir" só em chamado ABERTO sem técnico: define `tecnicoId`, muda para EM_ATENDIMENTO e grava ATRIBUIDO + STATUS_ALTERADO no histórico.
 - Assumir deve ser à prova de concorrência: `updateMany` com `where { id, status: ABERTO, tecnicoId: null }`; se `count === 0`, responder 409.
-- Ir para RESOLVIDO exige `solucao` (texto não vazio) e preenche `resolvidoEm`.
+- Ir para RESOLVIDO exige `solucao` (texto não vazio), preenche `resolvidoEm` e grava STATUS_ALTERADO + SOLUCAO_REGISTRADA (com a solução na `descricao`) no histórico.
 - O equipamento informado na abertura deve pertencer à escola do chamado. Para SOLICITANTE, a escola é sempre a dele (ignorar escola enviada no body).
 
 ### Histórico
@@ -252,7 +252,7 @@ Monorepo, TS strict nos dois apps, ESLint/Prettier, Tailwind v4 configurado, Doc
 
 ### Fase 1 — Banco e seed
 Schema da seção 5, migration inicial, `seed.ts` com: 1 admin, 3 técnicos, 5 escolas (nomes realistas de escolas públicas brasileiras), 1 solicitante por escola, 8 categorias (Impressora, Rede/Internet, Computador, Projetor, Software, Periféricos, Telefonia, Outros), ~40 equipamentos e ~150 chamados nos últimos 6 meses com histórico COERENTE (gerar cada chamado simulando o fluxo de status em ordem cronológica; nada de RESOLVIDO sem técnico ou `resolvidoEm` antes de `abertoEm`). Alguns equipamentos devem concentrar mais defeitos para o dashboard ficar interessante. Senhas do seed documentadas no README.
-**Pronto quando:** `npx prisma migrate reset` recria tudo e o seed roda sem erro.
+**Pronto quando:** `npm run db:reset -w apps/api` (`prisma migrate reset` + `prisma db seed`; no Prisma 7 o reset não roda mais o seed sozinho) recria tudo e o seed roda sem erro.
 
 ### Fase 2 — Autenticação e permissões
 API: login, logout, me, middlewares `autenticar` e `autorizar(...perfis)`, `AppError`, middleware de erro, middleware `validar(schema)`. Web: tela de login, `AuthContext`, `RotaProtegida` por perfil, layout com menu que muda por perfil.
