@@ -38,3 +38,10 @@ export async function criarUsuario(perfil: Perfil, dados: { ativo?: boolean } = 
     },
   });
 }
+
+export function criarEscola(dados: { nome?: string; ativo?: boolean } = {}) {
+  contador++;
+  return prisma.escola.create({
+    data: { nome: dados.nome ?? `Escola ${contador}`, ativo: dados.ativo ?? true },
+  });
+}

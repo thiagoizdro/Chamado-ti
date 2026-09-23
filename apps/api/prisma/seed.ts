@@ -1,7 +1,7 @@
 import { fakerPT_BR as faker } from '@faker-js/faker';
-import bcrypt from 'bcrypt';
 
 import { prisma } from '../src/lib/prisma.js';
+import { gerarHashSenha } from '../src/lib/senha.js';
 import {
   CATEGORIAS,
   DIAS_DE_HISTORICO,
@@ -18,8 +18,6 @@ import { type ContextoSimulacao, simularChamados } from './seed/simulacao.js';
 
 // Semente fixa: o seed gera sempre os mesmos dados.
 faker.seed(42);
-
-const CUSTO_BCRYPT = 10;
 
 async function limparBanco() {
   // RESTART IDENTITY faz os IDs recomeçarem do 1 a cada seed.
@@ -135,7 +133,7 @@ async function main() {
 
   await limparBanco();
 
-  const senhaHash = await bcrypt.hash(SENHA_PADRAO, CUSTO_BCRYPT);
+  const senhaHash = await gerarHashSenha(SENHA_PADRAO);
 
   const categorias = await criarCategorias();
   const tecnicos = await criarUsuariosDaRede(senhaHash);

@@ -1,11 +1,9 @@
 import { z } from 'zod';
 
+import { emailSchema } from '../../lib/schemas.js';
+
 export const loginSchema = z.object({
-  email: z
-    .string({ error: 'Informe o e-mail.' })
-    .trim()
-    .toLowerCase()
-    .pipe(z.email({ error: 'Informe um e-mail válido.' })),
+  email: emailSchema,
   senha: z.string({ error: 'Informe a senha.' }).min(1, 'Informe a senha.'),
 });
 

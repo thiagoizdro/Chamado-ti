@@ -32,3 +32,10 @@ export const textoOpcionalSchema = z
   .max(255)
   .nullish()
   .transform((texto) => texto || null);
+
+// E-mail sempre normalizado (sem espaços, minúsculo), no login e no cadastro.
+export const emailSchema = z
+  .string({ error: 'Informe o e-mail.' })
+  .trim()
+  .toLowerCase()
+  .pipe(z.email({ error: 'Informe um e-mail válido.' }));
