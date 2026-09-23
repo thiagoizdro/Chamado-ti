@@ -15,7 +15,8 @@ export const rotaNaoEncontrada: RequestHandler = (_req, res) => {
 
 export const tratarErro: ErrorRequestHandler = (erro: unknown, _req, res, _next) => {
   if (erro instanceof AppError) {
-    res.status(erro.statusCode).json({ mensagem: erro.message });
+    const erros = erro.campo ? { [erro.campo]: erro.message } : undefined;
+    res.status(erro.statusCode).json({ mensagem: erro.message, erros });
     return;
   }
 

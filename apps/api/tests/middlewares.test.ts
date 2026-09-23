@@ -23,6 +23,9 @@ app.get('/tecnico-ou-admin', autenticar, autorizar('TECNICO', 'ADMIN'), (_req, r
 app.get('/app-error', () => {
   throw new AppError(422, 'Transição de status inválida.');
 });
+app.get('/conflito-com-campo', () => {
+  throw new AppError(409, 'Já existe um equipamento com este patrimônio.', 'patrimonio');
+});
 app.get('/duplicado', async (_req, res) => {
   await prisma.escola.create({ data: { nome: 'A', codigoInep: '11111111' } });
   await prisma.escola.create({ data: { nome: 'B', codigoInep: '11111111' } });
@@ -80,6 +83,16 @@ describe('tratarErro', () => {
 
     expect(resposta.status).toBe(422);
     expect(resposta.body).toEqual({ mensagem: 'Transição de status inválida.' });
+  });
+
+  it('inclui o erro no campo quando o AppError informa o campo', async () => {
+    const resposta = await request(app).get('/conflito-com-campo');
+
+    expect(resposta.status).toBe(409);
+    expect(resposta.body).toEqual({
+      mensagem: 'Já existe um equipamento com este patrimônio.',
+      erros: { patrimonio: 'Já existe um equipamento com este patrimônio.' },
+    });
   });
 
   it('traduz violação de unicidade do Prisma (P2002) para 409', async () => {
