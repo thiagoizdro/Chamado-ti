@@ -7,7 +7,7 @@ import {
   CATEGORIAS_POR_TIPO,
   CATEGORIAS_SEM_EQUIPAMENTO,
   COMENTARIOS_TECNICO,
-  MODELOS_POR_CATEGORIA,
+  PROBLEMAS_POR_CATEGORIA,
 } from './modelos-chamado.js';
 
 // Simula chamados percorrendo a máquina de estados em ordem cronológica.
@@ -103,12 +103,13 @@ export function simularChamados(
 
 function simularChamado(faker: Faker, contexto: ContextoSimulacao): ChamadoSimulado {
   const { escolaId, equipamentoId, categoria } = sortearOrigem(faker, contexto);
-  const modelo = MODELOS_POR_CATEGORIA[categoria];
-  const problema = faker.helpers.arrayElement(modelo.problemas);
+  const problema = faker.helpers.arrayElement(PROBLEMAS_POR_CATEGORIA[categoria]);
+  // A solução é decidida no início: ela define se o chamado pode esperar peça.
+  const solucao = faker.helpers.arrayElement(problema.solucoes);
   const prioridade = sortearPrioridade(faker);
   const solicitanteId = buscarSolicitante(contexto, escolaId);
   const abertoEm = sortearAbertura(faker, contexto);
-  const parada = sortearParada(faker, contexto, abertoEm, modelo.pecas.length > 0);
+  const parada = sortearParada(faker, contexto, abertoEm, solucao.peca !== undefined);
 
   const chamado: ChamadoSimulado = {
     titulo: problema.titulo,
@@ -148,10 +149,14 @@ function simularChamado(faker: Faker, contexto: ContextoSimulacao): ChamadoSimul
     chamado.status = novo;
   }
 
-  // Avança o relógio do chamado. Se o próximo evento cairia no futuro,
-  // devolve false e o chamado fica parado no status atual.
+  // Avança o relógio do chamado (sempre para dentro do expediente). Se o
+  // próximo evento cairia no futuro, devolve false e o chamado fica parado
+  // no status atual.
   function avancar([min, max]: IntervaloHoras): boolean {
-    const proximo = new Date(instante.getTime() + faker.number.float({ min, max }) * HORA_EM_MS);
+    const proximo = ajustarParaExpediente(
+      faker,
+      new Date(instante.getTime() + faker.number.float({ min, max }) * HORA_EM_MS),
+    );
     if (proximo > contexto.agora) {
       return false;
     }
@@ -192,12 +197,12 @@ function simularChamado(faker: Faker, contexto: ContextoSimulacao): ChamadoSimul
 
   if (parada === 'EM_ATENDIMENTO') return chamado;
 
+  const { peca } = solucao;
   const vaiAguardarPeca =
-    parada === 'AGUARDANDO_PECA' ||
-    (modelo.pecas.length > 0 && faker.datatype.boolean({ probability: CHANCE_AGUARDAR_PECA }));
+    peca !== undefined &&
+    (parada === 'AGUARDANDO_PECA' || faker.datatype.boolean({ probability: CHANCE_AGUARDAR_PECA }));
 
   if (vaiAguardarPeca) {
-    const peca = faker.helpers.arrayElement(modelo.pecas);
     if (!avancar(PRAZO_PARA_PEDIR_PECA)) return chamado;
     mudarStatus('AGUARDANDO_PECA', tecnicoId, `Aguardando ${peca}.`);
     if (parada === 'AGUARDANDO_PECA' || !avancar(PRAZO_PARA_CHEGAR_PECA)) return chamado;
@@ -205,16 +210,15 @@ function simularChamado(faker: Faker, contexto: ContextoSimulacao): ChamadoSimul
   }
 
   if (!avancar(PRAZO_PARA_RESOLVER[prioridade])) return chamado;
-  const solucao = faker.helpers.arrayElement(modelo.solucoes);
   mudarStatus('RESOLVIDO', tecnicoId);
   registrar({
     usuarioId: tecnicoId,
     acao: 'SOLUCAO_REGISTRADA',
     statusAnterior: null,
     statusNovo: null,
-    descricao: solucao,
+    descricao: solucao.texto,
   });
-  chamado.solucao = solucao;
+  chamado.solucao = solucao.texto;
   chamado.resolvidoEm = instante;
 
   return chamado;
@@ -281,6 +285,30 @@ function sortearParada(
   return faker.helpers.weightedArrayElement(opcoes);
 }
 
+function ehFimDeSemana(data: Date) {
+  const diaDaSemana = data.getUTCDay();
+  return diaDaSemana === 0 || diaDaSemana === 6;
+}
+
+// A equipe técnica só trabalha em dia útil, no horário escolar: um evento que
+// cairia fora disso é empurrado para o próximo início de expediente.
+function ajustarParaExpediente(faker: Faker, data: Date): Date {
+  const ajustada = new Date(data);
+  const irParaInicioDoExpediente = () =>
+    ajustada.setUTCHours(HORA_UTC_INICIO_EXPEDIENTE, faker.number.int({ min: 0, max: 59 }), 0, 0);
+
+  for (;;) {
+    if (ehFimDeSemana(ajustada) || ajustada.getUTCHours() >= HORA_UTC_FIM_EXPEDIENTE) {
+      ajustada.setUTCDate(ajustada.getUTCDate() + 1);
+      irParaInicioDoExpediente();
+    } else if (ajustada.getUTCHours() < HORA_UTC_INICIO_EXPEDIENTE) {
+      irParaInicioDoExpediente();
+    } else {
+      return ajustada;
+    }
+  }
+}
+
 // Sorteia a abertura num dia útil, em horário escolar, dentro do período.
 function sortearAbertura(faker: Faker, contexto: ContextoSimulacao): Date {
   const dias = faker.datatype.boolean({ probability: CHANCE_ABERTURA_RECENTE })
@@ -290,8 +318,7 @@ function sortearAbertura(faker: Faker, contexto: ContextoSimulacao): Date {
 
   for (;;) {
     const data = faker.date.between({ from: inicio, to: contexto.agora });
-    const diaDaSemana = data.getUTCDay();
-    if (diaDaSemana === 0 || diaDaSemana === 6) continue;
+    if (ehFimDeSemana(data)) continue;
 
     data.setUTCHours(
       faker.number.int({ min: HORA_UTC_INICIO_EXPEDIENTE, max: HORA_UTC_FIM_EXPEDIENTE - 1 }),

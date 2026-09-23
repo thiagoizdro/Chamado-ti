@@ -2,6 +2,7 @@ import { base, Faker, pt_BR } from '@faker-js/faker';
 import { describe, expect, it } from 'vitest';
 
 import { CATEGORIAS, type NomeCategoria } from '../prisma/seed/dados.js';
+import { PROBLEMAS_POR_CATEGORIA } from '../prisma/seed/modelos-chamado.js';
 import {
   type ChamadoSimulado,
   type ContextoSimulacao,
@@ -38,6 +39,13 @@ function simular(semente: number, quantidade = 500): ChamadoSimulado[] {
   const faker = new Faker({ locale: [pt_BR, base] });
   faker.seed(semente);
   return simularChamados(faker, criarContexto(), quantidade);
+}
+
+// No contexto de teste, o id da categoria é a posição dela em CATEGORIAS + 1.
+function problemaDoChamado(chamado: ChamadoSimulado) {
+  const categoria = CATEGORIAS[chamado.categoriaId - 1];
+  if (!categoria) throw new Error(`Categoria ${chamado.categoriaId} inexistente`);
+  return PROBLEMAS_POR_CATEGORIA[categoria].find((problema) => problema.titulo === chamado.titulo);
 }
 
 describe('simulação de chamados do seed', () => {
@@ -128,6 +136,44 @@ describe('simulação de chamados do seed', () => {
       const equipamento = contexto.equipamentos.find((e) => e.id === chamado.equipamentoId);
 
       expect(equipamento?.escolaId).toBe(chamado.escolaId);
+    }
+  });
+
+  it('registra todos os eventos em dia útil e no horário escolar (10h–20h UTC)', () => {
+    for (const chamado of chamados) {
+      for (const { criadoEm } of chamado.historico) {
+        expect([0, 6]).not.toContain(criadoEm.getUTCDay());
+        expect(criadoEm.getUTCHours()).toBeGreaterThanOrEqual(10);
+        expect(criadoEm.getUTCHours()).toBeLessThan(20);
+      }
+    }
+  });
+
+  it('resolve cada chamado com uma solução do próprio problema', () => {
+    for (const chamado of chamados) {
+      const problema = problemaDoChamado(chamado);
+      expect(problema).toBeDefined();
+      if (chamado.solucao === null) continue;
+
+      const textos = problema?.solucoes.map((solucao) => solucao.texto);
+      expect(textos).toContain(chamado.solucao);
+    }
+  });
+
+  it('só espera peça que a solução do problema usa', () => {
+    for (const chamado of chamados) {
+      const pedido = chamado.historico.find((evento) => evento.statusNovo === 'AGUARDANDO_PECA');
+      if (!pedido) continue;
+
+      const problema = problemaDoChamado(chamado);
+      const peca = pedido.descricao?.replace(/^Aguardando (.*).$/, '$1');
+      const solucoesComPeca = problema?.solucoes.filter((solucao) => solucao.peca === peca) ?? [];
+      expect(solucoesComPeca.length).toBeGreaterThan(0);
+
+      // Se já foi resolvido, a solução registrada é a que usa essa peça.
+      if (chamado.solucao !== null) {
+        expect(solucoesComPeca.map((solucao) => solucao.texto)).toContain(chamado.solucao);
+      }
     }
   });
 
