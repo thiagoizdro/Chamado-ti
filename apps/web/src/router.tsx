@@ -6,6 +6,8 @@ import { Layout } from './components/Layout';
 import { PaginaEmConstrucao } from './components/PaginaEmConstrucao';
 import { RotaProtegida } from './components/RotaProtegida';
 import { EQUIPE_TECNICA, SO_ADMIN, SO_TECNICO, TODOS_OS_PERFIS } from './lib/navegacao';
+import FormularioCategoriaPage from './pages/categorias/FormularioCategoriaPage';
+import ListaCategoriasPage from './pages/categorias/ListaCategoriasPage';
 import FormularioEscolaPage from './pages/escolas/FormularioEscolaPage';
 import ListaEscolasPage from './pages/escolas/ListaEscolasPage';
 import LoginPage from './pages/LoginPage';
@@ -54,7 +56,12 @@ export const router = createBrowserRouter([
       },
       {
         path: 'categorias',
-        element: protegida(SO_ADMIN, <PaginaEmConstrucao titulo="Categorias" fase={3} />),
+        element: protegida(SO_ADMIN),
+        children: [
+          { index: true, element: <ListaCategoriasPage /> },
+          { path: 'novo', element: <FormularioCategoriaPage /> },
+          { path: ':id/editar', element: <FormularioCategoriaPage /> },
+        ],
       },
       { path: '*', element: <PaginaNaoEncontrada /> },
     ],

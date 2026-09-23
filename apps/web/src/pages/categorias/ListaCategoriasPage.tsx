@@ -9,40 +9,45 @@ import { DialogoConfirmacao } from '../../components/ui/DialogoConfirmacao';
 import { FiltroAtivo } from '../../components/ui/FiltroAtivo';
 import type { Coluna } from '../../components/ui/Tabela';
 import { useAlternarAtivo } from '../../hooks/useAlternarAtivo';
-import { useDesativarEscola, useListaEscolas, useSalvarEscola } from '../../hooks/useEscolas';
+import {
+  useDesativarCategoria,
+  useListaCategorias,
+  useSalvarCategoria,
+} from '../../hooks/useCategorias';
 import { useMensagemDaNavegacao } from '../../hooks/useMensagemDaNavegacao';
 import { useParametrosLista } from '../../hooks/useParametrosLista';
-import { dadosDaEscola } from '../../services/escolas.service';
-import type { Escola } from '../../types/cadastros';
+import { dadosDaCategoria } from '../../services/categorias.service';
+import type { Categoria } from '../../types/cadastros';
 
-export default function ListaEscolasPage() {
+export default function ListaCategoriasPage() {
   const { pagina, busca, ativo, mudarPagina, mudarBusca, mudarAtivo } = useParametrosLista();
-  const consulta = useListaEscolas({ pagina, q: busca || undefined, ativo });
+  const consulta = useListaCategorias({ pagina, q: busca || undefined, ativo });
   const mensagemDaNavegacao = useMensagemDaNavegacao();
 
   const ativacao = useAlternarAtivo({
-    salvar: useSalvarEscola(),
-    desativar: useDesativarEscola(),
-    paraDados: dadosDaEscola,
-    textos: { desativado: 'Escola desativada.', reativado: 'Escola reativada.' },
+    salvar: useSalvarCategoria(),
+    desativar: useDesativarCategoria(),
+    paraDados: dadosDaCategoria,
+    textos: { desativado: 'Categoria desativada.', reativado: 'Categoria reativada.' },
   });
 
-  const colunas: Coluna<Escola>[] = [
-    { titulo: 'Nome', celula: (escola) => <span className="font-medium">{escola.nome}</span> },
-    { titulo: 'INEP', celula: (escola) => escola.codigoInep ?? '—' },
-    { titulo: 'Endereço', celula: (escola) => escola.endereco ?? '—' },
-    { titulo: 'Situação', celula: (escola) => <BadgeAtivo ativo={escola.ativo} /> },
+  const colunas: Coluna<Categoria>[] = [
+    {
+      titulo: 'Nome',
+      celula: (categoria) => <span className="font-medium">{categoria.nome}</span>,
+    },
+    { titulo: 'Situação', celula: (categoria) => <BadgeAtivo ativo={categoria.ativo} /> },
     {
       titulo: 'Ações',
       className: 'text-right',
-      celula: (escola) => (
+      celula: (categoria) => (
         <AcoesDaLinha
-          nome={escola.nome}
-          ativo={escola.ativo}
-          linkEditar={`/escolas/${escola.id}/editar`}
+          nome={categoria.nome}
+          ativo={categoria.ativo}
+          linkEditar={`/categorias/${categoria.id}/editar`}
           processando={ativacao.processando}
-          aoDesativar={() => ativacao.pedirDesativacao(escola)}
-          aoReativar={() => void ativacao.reativar(escola)}
+          aoDesativar={() => ativacao.pedirDesativacao(categoria)}
+          aoReativar={() => void ativacao.reativar(categoria)}
         />
       ),
     },
@@ -54,16 +59,16 @@ export default function ListaEscolasPage() {
   return (
     <section>
       <CabecalhoPagina
-        titulo="Escolas"
-        descricao="Unidades da rede que podem abrir chamados."
-        acoes={<LinkBotao to="/escolas/novo">Nova escola</LinkBotao>}
+        titulo="Categorias"
+        descricao="Tipos de problema usados na abertura de chamados."
+        acoes={<LinkBotao to="/categorias/novo">Nova categoria</LinkBotao>}
       />
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <CampoBusca
-          id="busca-escolas"
+          id="busca-categorias"
           rotulo="Buscar"
-          placeholder="Nome ou código INEP"
+          placeholder="Nome da categoria"
           valor={busca}
           aoBuscar={mudarBusca}
         />
@@ -78,18 +83,18 @@ export default function ListaEscolasPage() {
 
       <ListaPaginada
         consulta={consulta}
-        legenda="Escolas"
+        legenda="Categorias"
         colunas={colunas}
-        chave={(escola) => escola.id}
-        mensagemVazio="Nenhuma escola encontrada."
-        mensagemErro="Não foi possível carregar as escolas."
+        chave={(categoria) => categoria.id}
+        mensagemVazio="Nenhuma categoria encontrada."
+        mensagemErro="Não foi possível carregar as categorias."
         aoMudarPagina={mudarPagina}
       />
 
       <DialogoConfirmacao
         aberto={ativacao.paraDesativar !== null}
-        titulo="Desativar escola"
-        mensagem={`A escola "${ativacao.paraDesativar?.nome ?? ''}" deixará de aparecer nos cadastros. O histórico de chamados é mantido.`}
+        titulo="Desativar categoria"
+        mensagem={`A categoria "${ativacao.paraDesativar?.nome ?? ''}" não poderá mais ser escolhida em novos chamados. Os chamados antigos continuam com ela.`}
         textoConfirmar="Desativar"
         perigoso
         processando={ativacao.processando}
