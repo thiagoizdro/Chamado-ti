@@ -12,6 +12,8 @@ import FormularioEscolaPage from './pages/escolas/FormularioEscolaPage';
 import ListaEscolasPage from './pages/escolas/ListaEscolasPage';
 import LoginPage from './pages/LoginPage';
 import PaginaNaoEncontrada from './pages/PaginaNaoEncontrada';
+import FormularioUsuarioPage from './pages/usuarios/FormularioUsuarioPage';
+import ListaUsuariosPage from './pages/usuarios/ListaUsuariosPage';
 import type { Perfil } from './types/usuario';
 
 // Sem "elemento", a rota protegida só renderiza as rotas filhas (<Outlet />).
@@ -52,7 +54,12 @@ export const router = createBrowserRouter([
       },
       {
         path: 'usuarios',
-        element: protegida(SO_ADMIN, <PaginaEmConstrucao titulo="Usuários" fase={3} />),
+        element: protegida(SO_ADMIN),
+        children: [
+          { index: true, element: <ListaUsuariosPage /> },
+          { path: 'novo', element: <FormularioUsuarioPage /> },
+          { path: ':id/editar', element: <FormularioUsuarioPage /> },
+        ],
       },
       {
         path: 'categorias',

@@ -7,6 +7,8 @@ type Props = {
   processando: boolean;
   aoDesativar: () => void;
   aoReativar: () => void;
+  // Ex.: o admin não pode desativar o próprio usuário.
+  podeDesativar?: boolean;
 };
 
 // Ações de uma linha de cadastro. O aria-label diz a qual registro o botão
@@ -18,6 +20,7 @@ export function AcoesDaLinha({
   processando,
   aoDesativar,
   aoReativar,
+  podeDesativar = true,
 }: Props) {
   return (
     <div className="flex justify-end gap-1">
@@ -25,15 +28,17 @@ export function AcoesDaLinha({
         Editar
       </LinkBotao>
       {ativo ? (
-        <Botao
-          variante="discreto"
-          onClick={aoDesativar}
-          disabled={processando}
-          aria-label={`Desativar ${nome}`}
-          className="text-red-700 hover:bg-red-50"
-        >
-          Desativar
-        </Botao>
+        podeDesativar && (
+          <Botao
+            variante="discreto"
+            onClick={aoDesativar}
+            disabled={processando}
+            aria-label={`Desativar ${nome}`}
+            className="text-red-700 hover:bg-red-50"
+          >
+            Desativar
+          </Botao>
+        )
       ) : (
         <Botao
           variante="discreto"
