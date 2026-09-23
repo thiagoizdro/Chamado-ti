@@ -1,12 +1,22 @@
+import { Navigate } from 'react-router';
+
+import { useAuth } from './hooks/useAuth';
+
+// Página provisória: vira o layout com menu no próximo passo.
 function App() {
+  const { usuario, carregando, sair } = useAuth();
+
+  if (carregando) return <p className="p-6 text-slate-600">Carregando…</p>;
+  if (!usuario) return <Navigate to="/login" replace />;
+
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-      <div className="max-w-md rounded-xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200">
-        <h1 className="text-2xl font-semibold text-slate-900">Chamados de TI</h1>
-        <p className="mt-2 text-slate-600">
-          Sistema de chamados de TI para redes de ensino. Em construção.
-        </p>
-      </div>
+    <main className="p-6">
+      <p className="text-slate-900">
+        Olá, {usuario.nome} ({usuario.perfil})
+      </p>
+      <button type="button" onClick={() => void sair()} className="mt-4 underline">
+        Sair
+      </button>
     </main>
   );
 }
