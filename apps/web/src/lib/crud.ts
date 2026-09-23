@@ -2,14 +2,15 @@ import type { ParametrosLista, RespostaPaginada } from '../types/paginacao';
 import { api } from './api';
 
 // Chamadas padrão de um cadastro REST (GET lista, GET :id, POST, PUT, DELETE).
-export function servicoCrud<TItem, TDados>(recurso: string) {
+// TDetalhe: formato do GET /:id, quando ele traz mais dados que a lista.
+export function servicoCrud<TItem, TDados, TDetalhe = TItem>(recurso: string) {
   return {
     async listar(parametros: ParametrosLista) {
       const { data } = await api.get<RespostaPaginada<TItem>>(recurso, { params: parametros });
       return data;
     },
     async buscar(id: number) {
-      const { data } = await api.get<TItem>(`${recurso}/${id}`);
+      const { data } = await api.get<TDetalhe>(`${recurso}/${id}`);
       return data;
     },
     async criar(dados: TDados) {
@@ -26,4 +27,6 @@ export function servicoCrud<TItem, TDados>(recurso: string) {
   };
 }
 
-export type ServicoCrud<TItem, TDados> = ReturnType<typeof servicoCrud<TItem, TDados>>;
+export type ServicoCrud<TItem, TDados, TDetalhe = TItem> = ReturnType<
+  typeof servicoCrud<TItem, TDados, TDetalhe>
+>;

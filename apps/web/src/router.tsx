@@ -8,6 +8,9 @@ import { RotaProtegida } from './components/RotaProtegida';
 import { EQUIPE_TECNICA, SO_ADMIN, SO_TECNICO, TODOS_OS_PERFIS } from './lib/navegacao';
 import FormularioCategoriaPage from './pages/categorias/FormularioCategoriaPage';
 import ListaCategoriasPage from './pages/categorias/ListaCategoriasPage';
+import DetalheEquipamentoPage from './pages/equipamentos/DetalheEquipamentoPage';
+import FormularioEquipamentoPage from './pages/equipamentos/FormularioEquipamentoPage';
+import ListaEquipamentosPage from './pages/equipamentos/ListaEquipamentosPage';
 import FormularioEscolaPage from './pages/escolas/FormularioEscolaPage';
 import ListaEscolasPage from './pages/escolas/ListaEscolasPage';
 import LoginPage from './pages/LoginPage';
@@ -41,7 +44,14 @@ export const router = createBrowserRouter([
       },
       {
         path: 'equipamentos',
-        element: protegida(EQUIPE_TECNICA, <PaginaEmConstrucao titulo="Equipamentos" fase={3} />),
+        element: protegida(EQUIPE_TECNICA),
+        children: [
+          { index: true, element: <ListaEquipamentosPage /> },
+          { path: ':id', element: <DetalheEquipamentoPage /> },
+          // Escrita só para admin (técnico vê lista e detalhe).
+          { path: 'novo', element: protegida(SO_ADMIN, <FormularioEquipamentoPage />) },
+          { path: ':id/editar', element: protegida(SO_ADMIN, <FormularioEquipamentoPage />) },
+        ],
       },
       {
         path: 'escolas',

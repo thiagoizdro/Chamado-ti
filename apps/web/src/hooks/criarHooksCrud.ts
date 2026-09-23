@@ -5,7 +5,10 @@ import type { ParametrosLista } from '../types/paginacao';
 
 // Gera os hooks de TanStack Query de um cadastro. Toda escrita invalida as
 // queries do recurso, então listas e detalhes se atualizam sozinhos.
-export function criarHooksCrud<TItem, TDados>(chave: string, servico: ServicoCrud<TItem, TDados>) {
+export function criarHooksCrud<TItem, TDados, TDetalhe = TItem>(
+  chave: string,
+  servico: ServicoCrud<TItem, TDados, TDetalhe>,
+) {
   function useLista(parametros: ParametrosLista) {
     return useQuery({
       queryKey: [chave, 'lista', parametros],
