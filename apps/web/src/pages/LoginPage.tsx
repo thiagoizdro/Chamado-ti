@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { Navigate, useLocation, useNavigate } from 'react-router';
+import { Navigate, useLocation } from 'react-router';
 import { z } from 'zod';
 
 import { useAuth } from '../hooks/useAuth';
@@ -19,7 +19,6 @@ type EstadoLocalizacao = { de?: string } | null;
 
 export default function LoginPage() {
   const { usuario, entrar } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const destino = (location.state as EstadoLocalizacao)?.de;
 
@@ -30,14 +29,16 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<DadosFormulario>({ resolver: zodResolver(loginSchema) });
 
+  // Único ponto de redirecionamento: vale tanto para quem já chega logado
+  // quanto para logo depois do login (entrar() atualiza o usuario).
+  // Se o destino for proibido para o perfil, a RotaProtegida corrige.
   if (usuario) {
-    return <Navigate to={PAGINA_INICIAL[usuario.perfil]} replace />;
+    return <Navigate to={destino ?? PAGINA_INICIAL[usuario.perfil]} replace />;
   }
 
   async function aoEnviar(dados: DadosFormulario) {
     try {
-      const usuarioLogado = await entrar(dados);
-      navigate(destino ?? PAGINA_INICIAL[usuarioLogado.perfil], { replace: true });
+      await entrar(dados);
     } catch (erro) {
       setError('root', { message: mensagemDoErro(erro, 'Não foi possível entrar.') });
     }
