@@ -28,7 +28,7 @@ Sistema full stack onde escolas de uma rede de ensino abrem chamados de TI (impr
 - Monorepo com npm workspaces: `apps/api` e `apps/web`.
 - **Runtime:** Node.js 24 (imagem Docker `node:24-alpine`).
 - **API:** TypeScript, Express, Prisma 7 (configuração em `prisma.config.ts`, driver adapter `@prisma/adapter-pg`), PostgreSQL 16, Zod (validação), bcrypt (hash de senha), jsonwebtoken, cookie-parser, cors, helmet. Em dev roda com `tsx watch`.
-- **Web:** React + TypeScript (Vite), Tailwind CSS v4 (plugin `@tailwindcss/vite`, sem `tailwind.config.js`), React Router, TanStack Query, React Hook Form + Zod, Axios, Recharts.
+- **Web:** React + TypeScript (Vite), Tailwind CSS v4 (plugin `@tailwindcss/vite`, sem `tailwind.config.js`), React Router, TanStack Query, React Hook Form + Zod (via `@hookform/resolvers`), Axios, Recharts.
 - **Testes:** Vitest + Supertest (API). Banco de teste separado.
 - **Qualidade:** ESLint (flat config) + Prettier, TypeScript em modo `strict`.
 - **Dependências de dev aprovadas:** `tsx`, `typescript-eslint`, `@eslint/js`, `globals`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `eslint-config-prettier`, `@vitejs/plugin-react` e os `@types` de node, express, cors, cookie-parser, jsonwebtoken, bcrypt e supertest.
