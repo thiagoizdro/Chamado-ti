@@ -2,9 +2,13 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { Router } from 'express';
 import helmet from 'helmet';
+import { z } from 'zod';
 
 import { env } from './lib/env.js';
 import { rotaNaoEncontrada, tratarErro } from './middlewares/erro.js';
+
+// Mensagens padrão do Zod em português (os schemas podem sobrescrever).
+z.config(z.locales.ptBR());
 
 export const app = express();
 
