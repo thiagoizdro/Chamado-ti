@@ -13,6 +13,14 @@ export default defineConfig([
   {
     files: ['**/*.{js,ts,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
+    rules: {
+      // Prefixo "_" marca parâmetro não usado de propósito
+      // (ex.: o 4º argumento obrigatório do middleware de erro do Express).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
+    },
   },
 
   // API (Node)

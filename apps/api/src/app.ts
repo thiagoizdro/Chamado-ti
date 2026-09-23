@@ -4,6 +4,7 @@ import express, { Router } from 'express';
 import helmet from 'helmet';
 
 import { env } from './lib/env.js';
+import { rotaNaoEncontrada, tratarErro } from './middlewares/erro.js';
 
 export const app = express();
 
@@ -21,3 +22,7 @@ api.get('/health', (_req, res) => {
 });
 
 app.use('/api', api);
+app.use('/api', rotaNaoEncontrada);
+
+// Precisa ser o último middleware registrado.
+app.use(tratarErro);
