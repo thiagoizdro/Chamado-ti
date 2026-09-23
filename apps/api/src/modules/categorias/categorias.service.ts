@@ -37,7 +37,7 @@ async function garantirNomeLivre(nome: string, idAtual?: number) {
   if (existente) throw nomeDuplicado();
 }
 
-async function buscarPorId(id: number) {
+export async function buscarPorId(id: number) {
   const categoria = await prisma.categoria.findUnique({ where: { id } });
   if (!categoria) {
     throw new AppError(404, 'Categoria não encontrada.');

@@ -221,7 +221,7 @@ Prefixo `/api`. Respostas de lista paginadas: `{ dados, total, pagina, porPagina
 - `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`
 - `GET|POST /escolas`, `GET|PUT|DELETE /escolas/:id` (admin)
 - `GET|POST /usuarios`, `GET|PUT|DELETE /usuarios/:id` (admin)
-- `GET|POST /categorias`, `PUT|DELETE /categorias/:id` (GET liberado a todos logados; escrita só admin)
+- `GET|POST /categorias`, `GET|PUT|DELETE /categorias/:id` (`GET /categorias` liberado a todos logados, não-admin só vê ativas; `GET /categorias/:id` e escrita só admin)
 - `GET|POST /equipamentos`, `GET|PUT|DELETE /equipamentos/:id` (escrita só admin; `GET /equipamentos` liberado a todos logados, mas solicitante só recebe os da sua escola, para o select de abertura; `GET /equipamentos/:id` só técnico/admin)
 - `GET /equipamentos/:id/chamados` → histórico de defeitos da máquina (só técnico/admin)
 - `POST /chamados`, `GET /chamados`, `GET /chamados/:id` (inclui histórico com nome do usuário)

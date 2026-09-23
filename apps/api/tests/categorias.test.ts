@@ -112,6 +112,23 @@ describe('escrita de categorias', () => {
     expect(resposta.body.nome).toBe('projetor');
   });
 
+  it('busca uma categoria por id (só admin, usado no formulário de edição)', async () => {
+    const { body: categoria } = await criarCategoria('Telefonia');
+    const { cookie: tecnico } = await criarSessao('TECNICO');
+
+    const comoAdmin = await request(app)
+      .get(`/api/categorias/${categoria.id}`)
+      .set('Cookie', admin);
+    const comoTecnico = await request(app)
+      .get(`/api/categorias/${categoria.id}`)
+      .set('Cookie', tecnico);
+
+    expect(comoAdmin.status).toBe(200);
+    expect(comoAdmin.body).toMatchObject({ id: categoria.id, nome: 'Telefonia' });
+    expect(comoTecnico.status).toBe(403);
+    expect((await request(app).get('/api/categorias/999').set('Cookie', admin)).status).toBe(404);
+  });
+
   it('responde 404 para categoria inexistente', async () => {
     const resposta = await request(app)
       .put('/api/categorias/999')

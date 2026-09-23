@@ -19,6 +19,12 @@ categoriasRoutes.post(
   validar({ body: categoriaSchema }),
   categoriasController.criar,
 );
+categoriasRoutes.get(
+  '/:id',
+  autorizar('ADMIN'),
+  validar({ params: idParamSchema }),
+  categoriasController.buscar,
+);
 categoriasRoutes.put(
   '/:id',
   autorizar('ADMIN'),

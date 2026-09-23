@@ -10,6 +10,11 @@ export async function listar(req: Request, res: Response) {
   res.json(await categoriasService.listar(req.query as unknown as FiltrosCategorias, perfil));
 }
 
+export async function buscar(req: Request, res: Response) {
+  const { id } = req.params as unknown as IdParam;
+  res.json(await categoriasService.buscarPorId(id));
+}
+
 export async function criar(req: Request, res: Response) {
   res.status(201).json(await categoriasService.criar(req.body as DadosCategoria));
 }
