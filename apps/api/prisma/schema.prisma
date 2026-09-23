@@ -1,4 +1,4 @@
-// Os models entram na Fase 1. A URL de conexão fica no prisma.config.ts.
+// A URL de conexão fica no prisma.config.ts.
 
 generator client {
   provider = "prisma-client"
@@ -7,4 +7,131 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Perfil {
+  SOLICITANTE
+  TECNICO
+  ADMIN
+}
+
+enum StatusChamado {
+  ABERTO
+  EM_ATENDIMENTO
+  AGUARDANDO_PECA
+  RESOLVIDO
+}
+
+enum Prioridade {
+  BAIXA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum AcaoHistorico {
+  CRIADO
+  ATRIBUIDO
+  STATUS_ALTERADO
+  COMENTARIO
+  SOLUCAO_REGISTRADA
+}
+
+model Escola {
+  id           Int           @id @default(autoincrement())
+  nome         String
+  codigoInep   String?       @unique @map("codigo_inep")
+  endereco     String?
+  ativo        Boolean       @default(true)
+  usuarios     Usuario[]
+  equipamentos Equipamento[]
+  chamados     Chamado[]
+
+  @@map("escolas")
+}
+
+model Usuario {
+  id                 Int                @id @default(autoincrement())
+  nome               String
+  email              String             @unique
+  senhaHash          String             @map("senha_hash")
+  perfil             Perfil
+  escolaId           Int?               @map("escola_id")
+  escola             Escola?            @relation(fields: [escolaId], references: [id])
+  ativo              Boolean            @default(true)
+  chamadosAbertos    Chamado[]          @relation("Solicitante")
+  chamadosAtribuidos Chamado[]          @relation("Tecnico")
+  historicos         HistoricoChamado[]
+  criadoEm           DateTime           @default(now()) @map("criado_em")
+
+  @@map("usuarios")
+}
+
+model Categoria {
+  id       Int       @id @default(autoincrement())
+  nome     String    @unique
+  ativo    Boolean   @default(true)
+  chamados Chamado[]
+
+  @@map("categorias")
+}
+
+model Equipamento {
+  id          Int       @id @default(autoincrement())
+  patrimonio  String    @unique
+  tipo        String
+  marca       String?
+  modelo      String?
+  localizacao String?
+  escolaId    Int       @map("escola_id")
+  escola      Escola    @relation(fields: [escolaId], references: [id])
+  ativo       Boolean   @default(true)
+  chamados    Chamado[]
+
+  @@index([escolaId])
+  @@map("equipamentos")
+}
+
+model Chamado {
+  id            Int                @id @default(autoincrement())
+  titulo        String
+  descricao     String
+  prioridade    Prioridade         @default(MEDIA)
+  status        StatusChamado      @default(ABERTO)
+  solucao       String?
+  escolaId      Int                @map("escola_id")
+  equipamentoId Int?               @map("equipamento_id")
+  categoriaId   Int                @map("categoria_id")
+  solicitanteId Int                @map("solicitante_id")
+  tecnicoId     Int?               @map("tecnico_id")
+  escola        Escola             @relation(fields: [escolaId], references: [id])
+  equipamento   Equipamento?       @relation(fields: [equipamentoId], references: [id])
+  categoria     Categoria          @relation(fields: [categoriaId], references: [id])
+  solicitante   Usuario            @relation("Solicitante", fields: [solicitanteId], references: [id])
+  tecnico       Usuario?           @relation("Tecnico", fields: [tecnicoId], references: [id])
+  historico     HistoricoChamado[]
+  abertoEm      DateTime           @default(now()) @map("aberto_em")
+  resolvidoEm   DateTime?          @map("resolvido_em")
+  atualizadoEm  DateTime           @updatedAt @map("atualizado_em")
+
+  @@index([status])
+  @@index([escolaId])
+  @@index([equipamentoId])
+  @@map("chamados")
+}
+
+model HistoricoChamado {
+  id             Int            @id @default(autoincrement())
+  chamadoId      Int            @map("chamado_id")
+  usuarioId      Int            @map("usuario_id")
+  acao           AcaoHistorico
+  statusAnterior StatusChamado? @map("status_anterior")
+  statusNovo     StatusChamado? @map("status_novo")
+  descricao      String?
+  criadoEm       DateTime       @default(now()) @map("criado_em")
+  chamado        Chamado        @relation(fields: [chamadoId], references: [id], onDelete: Cascade)
+  usuario        Usuario        @relation(fields: [usuarioId], references: [id])
+
+  @@index([chamadoId])
+  @@map("historico_chamado")
 }
