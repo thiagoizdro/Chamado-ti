@@ -4,12 +4,17 @@ import bcrypt from 'bcrypt';
 import { prisma } from '../src/lib/prisma.js';
 import {
   CATEGORIAS,
+  DIAS_DE_HISTORICO,
   DOMINIO_EMAIL,
   ESCOLAS,
+  type NomeCategoria,
+  QUANTIDADE_CHAMADOS,
+  QUANTIDADE_EQUIPAMENTOS_PROBLEMATICOS,
   QUANTIDADE_TECNICOS,
   SENHA_PADRAO,
   TIPOS_EQUIPAMENTO,
 } from './seed/dados.js';
+import { type ContextoSimulacao, simularChamados } from './seed/simulacao.js';
 
 // Semente fixa: o seed gera sempre os mesmos dados.
 faker.seed(42);
@@ -79,6 +84,14 @@ async function criarEscolasComSolicitantes(senhaHash: string) {
   return escolas;
 }
 
+function buscarSolicitanteDaEscola(usuarios: { id: number }[]): number {
+  const [solicitante] = usuarios;
+  if (!solicitante) {
+    throw new Error('Escola criada sem solicitante');
+  }
+  return solicitante.id;
+}
+
 async function criarEquipamentos(escolaIds: number[]) {
   let proximoPatrimonio = 1;
 
@@ -103,7 +116,23 @@ async function criarEquipamentos(escolaIds: number[]) {
   return prisma.equipamento.findMany({ orderBy: { id: 'asc' } });
 }
 
+async function criarChamados(contexto: ContextoSimulacao) {
+  const chamados = simularChamados(faker, contexto, QUANTIDADE_CHAMADOS);
+
+  // Em ordem de abertura: IDs menores são os chamados mais antigos.
+  for (const { historico, ...chamado } of chamados) {
+    await prisma.chamado.create({
+      data: { ...chamado, historico: { createMany: { data: historico } } },
+    });
+  }
+
+  return chamados;
+}
+
 async function main() {
+  // Data de referência única: nenhum evento do seed fica depois dela.
+  const agora = new Date();
+
   await limparBanco();
 
   const senhaHash = await bcrypt.hash(SENHA_PADRAO, CUSTO_BCRYPT);
@@ -113,11 +142,39 @@ async function main() {
   const escolas = await criarEscolasComSolicitantes(senhaHash);
   const equipamentos = await criarEquipamentos(escolas.map((escola) => escola.id));
 
+  const problematicos = new Set(
+    faker.helpers
+      .arrayElements(equipamentos, QUANTIDADE_EQUIPAMENTOS_PROBLEMATICOS)
+      .map((equipamento) => equipamento.id),
+  );
+
+  const chamados = await criarChamados({
+    agora,
+    diasDeHistorico: DIAS_DE_HISTORICO,
+    escolas: escolas.map((escola) => ({
+      id: escola.id,
+      solicitanteId: buscarSolicitanteDaEscola(escola.usuarios),
+    })),
+    equipamentos: equipamentos.map(({ id, escolaId, tipo }) => ({
+      id,
+      escolaId,
+      tipo,
+      problematico: problematicos.has(id),
+    })),
+    categoriaIdPorNome: Object.fromEntries(
+      categorias.map((categoria) => [categoria.nome, categoria.id]),
+    ) as Record<NomeCategoria, number>,
+    tecnicoIds: tecnicos.map((tecnico) => tecnico.id),
+  });
+
   console.log('Seed concluído:');
   console.log(`  ${categorias.length} categorias`);
   console.log(`  ${escolas.length} escolas`);
   console.log(`  ${tecnicos.length} técnicos, 1 admin e ${escolas.length} solicitantes`);
   console.log(`  ${equipamentos.length} equipamentos`);
+  console.log(
+    `  ${chamados.length} chamados com ${chamados.reduce((total, c) => total + c.historico.length, 0)} registros de histórico`,
+  );
 }
 
 main()

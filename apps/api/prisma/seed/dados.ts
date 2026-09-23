@@ -127,3 +127,10 @@ export const TIPOS_EQUIPAMENTO: TipoEquipamento[] = [
     localizacoes: ['Secretaria', 'Diretoria'],
   },
 ];
+
+export const QUANTIDADE_CHAMADOS = 150;
+
+export const DIAS_DE_HISTORICO = 180;
+
+// Quantos equipamentos concentram mais defeitos (deixa o dashboard interessante)
+export const QUANTIDADE_EQUIPAMENTOS_PROBLEMATICOS = 5;
