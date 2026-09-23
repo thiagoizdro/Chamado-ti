@@ -7,7 +7,7 @@ Sistema full stack para escolas de uma rede de ensino abrirem chamados de TI (im
 ## Stack
 
 - **API:** Node.js 24, TypeScript, Express 5, Prisma 7 (PostgreSQL 16), Zod
-- **Web:** React 19, Vite, Tailwind CSS v4
+- **Web:** React 19, Vite, Tailwind CSS v4, React Router, TanStack Query, React Hook Form
 - **Testes:** Vitest + Supertest
 - **Infra local:** Docker Compose (`db`, `api` e `web`)
 
@@ -22,6 +22,8 @@ docker compose up --build
 
 - Web: http://localhost:5173
 - API: http://localhost:3333/api/health
+
+O `.env.example` já funciona para desenvolvimento local. Em qualquer ambiente real, troque o `JWT_SECRET` por um valor aleatório (o comando para gerar está no próprio arquivo).
 
 Na subida, a API aplica as migrations automaticamente (`prisma migrate deploy`). Para popular o banco com dados de exemplo:
 
@@ -45,7 +47,7 @@ npm run dev -w apps/web   # Web em http://localhost:5173
 
 ## Dados de exemplo (seed)
 
-O seed é determinístico e gera: 5 escolas, 8 categorias, 40 equipamentos e 150 chamados distribuídos nos últimos 6 meses, com histórico coerente (cada chamado percorre o fluxo de status em ordem cronológica). Alguns equipamentos concentram mais defeitos, e parte dos chamados recentes ainda está em andamento.
+O seed usa uma semente fixa e gera: 5 escolas, 8 categorias, 40 equipamentos e 150 chamados distribuídos nos últimos 6 meses, com histórico coerente (cada chamado percorre o fluxo de status em ordem cronológica). Alguns equipamentos concentram mais defeitos, e parte dos chamados recentes ainda está em andamento. As datas são calculadas a partir do momento em que o seed roda, então os dados são sempre "recentes"; os números exatos mudam um pouco de um dia para o outro.
 
 Para recriar o banco do zero e rodar o seed:
 
@@ -68,6 +70,17 @@ Todos os usuários usam a senha **`Senha@123`**.
 | SOLICITANTE | `direcao.ceciliameireles@chamados.dev` | EMEI Cecília Meireles               |
 | SOLICITANTE | `direcao.paulofreire@chamados.dev`     | Escola Municipal Paulo Freire       |
 | SOLICITANTE | `direcao.dompedro@chamados.dev`        | EMEF Dom Pedro II                   |
+
+## Testes
+
+Os testes da API usam um banco separado (`chamados_ti_test`), criado e migrado automaticamente na primeira execução. Só é preciso que o Postgres do Docker esteja rodando:
+
+```bash
+docker compose up -d db
+npm test
+```
+
+Por segurança, os testes se recusam a rodar em um banco cujo nome não termine em `_test`.
 
 ## Scripts úteis
 
