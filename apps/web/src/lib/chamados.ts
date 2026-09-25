@@ -64,3 +64,12 @@ export const NOMES_FILTROS = [
 ] as const;
 
 export type NomeFiltro = (typeof NOMES_FILTROS)[number];
+
+// Marcador sólido de cada status (cartões do dashboard), na mesma família de
+// cor dos badges.
+export const MARCADOR_STATUS: Record<StatusChamado, string> = {
+  ABERTO: 'bg-blue-600',
+  EM_ATENDIMENTO: 'bg-amber-500',
+  AGUARDANDO_PECA: 'bg-purple-600',
+  RESOLVIDO: 'bg-green-600',
+};
