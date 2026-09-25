@@ -16,15 +16,22 @@ export const chamadosRoutes = Router();
 
 chamadosRoutes.use(autenticar);
 
-// Abrir, listar, ver e comentar: qualquer logado. O service limita o
-// solicitante aos chamados da própria escola.
+// Listar, ver e comentar: qualquer logado. O service limita o solicitante
+// aos chamados da própria escola.
 chamadosRoutes.get('/', validar({ query: listarChamadosSchema }), chamadosController.listar);
-chamadosRoutes.post('/', validar({ body: criarChamadoSchema }), chamadosController.criar);
 chamadosRoutes.get('/:id', validar({ params: idParamSchema }), chamadosController.buscar);
 chamadosRoutes.post(
   '/:id/comentarios',
   validar({ params: idParamSchema, body: comentarioSchema }),
   chamadosController.comentar,
+);
+
+// Abrir: solicitante (na própria escola) e admin (escolhe a escola).
+chamadosRoutes.post(
+  '/',
+  autorizar('SOLICITANTE', 'ADMIN'),
+  validar({ body: criarChamadoSchema }),
+  chamadosController.criar,
 );
 
 // Atendimento: técnico e admin.

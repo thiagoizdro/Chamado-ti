@@ -31,7 +31,7 @@ export const criarChamadoSchema = z.object({
     .int()
     .positive('Selecione a categoria.'),
   equipamentoId: idOpcionalSchema('Equipamento inválido.'),
-  // Obrigatória para técnico/admin; para solicitante é ignorada (vale a escola dele).
+  // Obrigatória para admin; para solicitante é ignorada (vale a escola dele).
   escolaId: idOpcionalSchema('Escola inválida.'),
 });
 

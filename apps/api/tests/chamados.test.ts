@@ -264,14 +264,25 @@ describe('abertura', () => {
     expect(await prisma.chamado.count()).toBe(0);
   });
 
-  it('exige escola quando quem abre é técnico ou admin', async () => {
+  it('exige escola quando quem abre é admin', async () => {
+    const { cookie: admin } = await criarSessao('ADMIN');
+
     const resposta = await request(app)
       .post('/api/chamados')
-      .set('Cookie', cookieTecnico)
+      .set('Cookie', admin)
       .send(dadosChamado());
 
     expect(resposta.status).toBe(422);
     expect(resposta.body.erros).toEqual({ escolaId: 'Selecione a escola.' });
+  });
+
+  it('não deixa o técnico abrir chamado', async () => {
+    const resposta = await request(app)
+      .post('/api/chamados')
+      .set('Cookie', cookieTecnico)
+      .send(dadosChamado({ escolaId }));
+
+    expect(resposta.status).toBe(403);
   });
 
   it('valida os campos obrigatórios', async () => {
