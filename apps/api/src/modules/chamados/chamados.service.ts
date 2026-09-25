@@ -1,6 +1,7 @@
 import type { Prisma } from '../../generated/prisma/client.js';
 import { AppError } from '../../lib/AppError.js';
 import { respostaPaginada, skipTake } from '../../lib/paginacao.js';
+import { intervaloDoPeriodo } from '../../lib/periodo.js';
 import { prisma } from '../../lib/prisma.js';
 import type { UsuarioAutenticado } from '../../types/express.js';
 import { garantirEscolaAtiva } from '../escolas/escolas.service.js';
@@ -60,13 +61,34 @@ const ORDENACAO: Record<FiltrosChamados['ordem'], Prisma.ChamadoOrderByWithRelat
   prioridade: [{ prioridade: 'desc' }, { abertoEm: 'asc' }],
 };
 
-export async function listar(filtros: FiltrosChamados, usuario: UsuarioAutenticado) {
-  const { status, tecnicoId, ordem, pagina, porPagina } = filtros;
-  const paginacao = { pagina, porPagina };
-  const where: Prisma.ChamadoWhereInput = {
-    ...escopoDoUsuario(usuario),
+// Cada filtro informado vira uma condição; todas precisam valer (AND).
+function whereDosFiltros(filtros: FiltrosChamados): Prisma.ChamadoWhereInput {
+  const { status, prioridade, escolaId, categoriaId, tecnicoId, q } = filtros;
+  const abertoEm = intervaloDoPeriodo(filtros);
+  return {
     ...(status?.length && { status: { in: status } }),
+    ...(prioridade?.length && { prioridade: { in: prioridade } }),
+    ...(escolaId && { escolaId }),
+    ...(categoriaId && { categoriaId }),
     ...(tecnicoId && { tecnicoId }),
+    ...(abertoEm && { abertoEm }),
+    ...(q && {
+      OR: [
+        { titulo: { contains: q, mode: 'insensitive' } },
+        { descricao: { contains: q, mode: 'insensitive' } },
+        { equipamento: { patrimonio: { contains: q, mode: 'insensitive' } } },
+      ],
+    }),
+  };
+}
+
+export async function listar(filtros: FiltrosChamados, usuario: UsuarioAutenticado) {
+  const { ordem, pagina, porPagina } = filtros;
+  const paginacao = { pagina, porPagina };
+  // O escopo vem por último: para o solicitante, sobrescreve qualquer escolaId do filtro.
+  const where: Prisma.ChamadoWhereInput = {
+    ...whereDosFiltros(filtros),
+    ...escopoDoUsuario(usuario),
   };
 
   // Promise.all em vez de $transaction([...]): com várias relações no select,

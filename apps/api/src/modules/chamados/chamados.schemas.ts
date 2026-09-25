@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { Prioridade, StatusChamado } from '../../generated/prisma/enums.js';
 import { paginacaoSchema } from '../../lib/paginacao.js';
+import { camposPeriodo, erroPeriodo, periodoValido } from '../../lib/periodo.js';
+import { buscaSchema } from '../../lib/schemas.js';
 
 const idOpcionalSchema = (mensagem: string) =>
   z
@@ -57,20 +59,33 @@ export const comentarioSchema = z.object({
   texto: textoLongoSchema('o comentário', 2),
 });
 
-// "status" aceita vários valores separados por vírgula (ex.: a "Minha fila"
-// pede EM_ATENDIMENTO,AGUARDANDO_PECA de uma vez).
-const listaDeStatusSchema = z
-  .string()
-  .transform((texto) => texto.split(',').filter(Boolean))
-  .pipe(z.array(z.enum(StatusChamado, { error: 'Status inválido.' })))
-  .optional();
+// Filtros de enum aceitam vários valores separados por vírgula (ex.: a
+// "Minha fila" pede status=EM_ATENDIMENTO,AGUARDANDO_PECA de uma vez).
+function listaDeEnumSchema<const T extends Record<string, string>>(valores: T, erro: string) {
+  return z
+    .string()
+    .transform((texto) => texto.split(',').filter(Boolean))
+    .pipe(z.array(z.enum(valores, { error: erro })))
+    .optional();
+}
 
-export const listarChamadosSchema = paginacaoSchema.extend({
-  status: listaDeStatusSchema,
-  tecnicoId: z.coerce.number().int().positive().optional(),
-  // "prioridade": mais urgentes e mais antigos primeiro (ordem de fila).
-  ordem: z.enum(['recentes', 'prioridade']).default('recentes'),
-});
+const idDeFiltroSchema = z.coerce.number().int().positive().optional();
+
+export const listarChamadosSchema = paginacaoSchema
+  .extend({
+    status: listaDeEnumSchema(StatusChamado, 'Status inválido.'),
+    prioridade: listaDeEnumSchema(Prioridade, 'Prioridade inválida.'),
+    // Para o solicitante a escola é sempre a dele (o service ignora este filtro).
+    escolaId: idDeFiltroSchema,
+    categoriaId: idDeFiltroSchema,
+    tecnicoId: idDeFiltroSchema,
+    ...camposPeriodo,
+    // Busca em título, descrição e patrimônio do equipamento.
+    q: buscaSchema,
+    // "prioridade": mais urgentes e mais antigos primeiro (ordem de fila).
+    ordem: z.enum(['recentes', 'prioridade']).default('recentes'),
+  })
+  .refine(periodoValido, erroPeriodo);
 
 export type DadosCriarChamado = z.infer<typeof criarChamadoSchema>;
 export type DadosMudarStatus = z.infer<typeof mudarStatusSchema>;
