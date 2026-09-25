@@ -4,6 +4,7 @@ import type { Perfil } from '../types/usuario';
 export const SO_ADMIN: Perfil[] = ['ADMIN'];
 export const SO_TECNICO: Perfil[] = ['TECNICO'];
 export const EQUIPE_TECNICA: Perfil[] = ['TECNICO', 'ADMIN'];
+export const SOLICITANTE_E_ADMIN: Perfil[] = ['SOLICITANTE', 'ADMIN'];
 export const TODOS_OS_PERFIS: Perfil[] = ['SOLICITANTE', 'TECNICO', 'ADMIN'];
 
 // Para onde cada perfil vai depois do login (ou ao tentar abrir uma rota proibida).
