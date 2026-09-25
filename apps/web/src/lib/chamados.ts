@@ -51,3 +51,16 @@ export const ROTULO_ACAO_STATUS: Record<DestinoStatus, string> = {
   AGUARDANDO_PECA: 'Aguardar peça',
   RESOLVIDO: 'Resolver',
 };
+
+// Nomes dos filtros na URL (os mesmos parâmetros da API).
+export const NOMES_FILTROS = [
+  'status',
+  'prioridade',
+  'escolaId',
+  'categoriaId',
+  'tecnicoId',
+  'de',
+  'ate',
+] as const;
+
+export type NomeFiltro = (typeof NOMES_FILTROS)[number];

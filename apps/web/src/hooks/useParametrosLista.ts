@@ -43,5 +43,7 @@ export function useParametrosLista() {
     mudarAtivo: (valor: FiltroAtivo) =>
       alterar({ ativo: valor === 'ativos' ? undefined : valor, pagina: undefined }),
     mudarFiltro: (nome: string, valor: string) => alterar({ [nome]: valor, pagina: undefined }),
+    // Volta para a lista sem busca, filtros nem página (entra no histórico).
+    limparFiltros: () => setParametros(new URLSearchParams()),
   };
 }
