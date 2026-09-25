@@ -483,3 +483,95 @@ describe('filtros da listagem', () => {
     expect(ids).toEqual([daEscolaDele.id]);
   });
 });
+
+describe('casos de borda', () => {
+  it('responde 404 para chamado inexistente e 400 para id inválido', async () => {
+    const inexistente = await request(app).get('/api/chamados/9999').set('Cookie', cookieTecnico);
+    const invalido = await request(app).get('/api/chamados/abc').set('Cookie', cookieTecnico);
+
+    expect(inexistente.status).toBe(404);
+    expect(invalido.status).toBe(400);
+  });
+
+  it('devolve a lista no formato paginado do contrato', async () => {
+    await abrirChamado();
+    await abrirChamado();
+    await abrirChamado();
+
+    const resposta = await request(app)
+      .get('/api/chamados?pagina=2&porPagina=2')
+      .set('Cookie', cookieTecnico);
+
+    expect(resposta.body).toMatchObject({ total: 3, pagina: 2, porPagina: 2 });
+    expect(resposta.body.dados).toHaveLength(1);
+  });
+
+  it('não expõe rotas para alterar ou apagar chamado e histórico', async () => {
+    const { id } = await abrirChamado();
+    const { cookie: admin } = await criarSessao('ADMIN');
+
+    for (const requisicao of [
+      request(app).delete(`/api/chamados/${id}`),
+      request(app).put(`/api/chamados/${id}`).send({ titulo: 'Outro título' }),
+      request(app).delete(`/api/chamados/${id}/historico`),
+    ]) {
+      expect((await requisicao.set('Cookie', admin)).status).toBe(404);
+    }
+    expect(await acoesDoHistorico(id)).toEqual(['CRIADO']);
+  });
+
+  it('recusa categoria e equipamento inativos na abertura', async () => {
+    const inativa = await prisma.categoria.create({ data: { nome: 'Antiga', ativo: false } });
+    const equipamento = await prisma.equipamento.create({
+      data: { patrimonio: 'PAT-9', tipo: 'Impressora', escolaId, ativo: false },
+    });
+
+    const comCategoria = await request(app)
+      .post('/api/chamados')
+      .set('Cookie', cookieSolicitante)
+      .send(dadosChamado({ categoriaId: inativa.id }));
+    const comEquipamento = await request(app)
+      .post('/api/chamados')
+      .set('Cookie', cookieSolicitante)
+      .send(dadosChamado({ equipamentoId: equipamento.id }));
+
+    expect(comCategoria.status).toBe(422);
+    expect(comCategoria.body.erros).toHaveProperty('categoriaId');
+    expect(comEquipamento.status).toBe(422);
+    expect(comEquipamento.body.erros).toHaveProperty('equipamentoId');
+  });
+
+  it('recusa "mudar" para o mesmo status', async () => {
+    const { id } = await abrirChamado();
+    await assumir(id);
+
+    expect((await mudarStatus(id, { status: 'EM_ATENDIMENTO' })).status).toBe(422);
+  });
+
+  it('aplica só uma de duas mudanças de status simultâneas', async () => {
+    const { id } = await abrirChamado();
+    await assumir(id);
+
+    const respostas = await Promise.all([
+      mudarStatus(id, { status: 'AGUARDANDO_PECA' }),
+      mudarStatus(id, { status: 'RESOLVIDO', solucao: 'Resolvido.' }),
+    ]);
+
+    // A segunda perde: 409 se leu o status antigo, 422 se já leu o novo.
+    const status = respostas.map((resposta) => resposta.status).sort();
+    expect(status[0]).toBe(200);
+    expect([409, 422]).toContain(status[1]);
+    const alteracoes = (await acoesDoHistorico(id)).filter((acao) => acao === 'STATUS_ALTERADO');
+    expect(alteracoes).toHaveLength(2); // a do assumir + a vencedora
+  });
+
+  it('deixa o admin atender como técnico', async () => {
+    const { usuario: admin, cookie } = await criarSessao('ADMIN');
+    const { id } = await abrirChamado();
+
+    const resposta = await assumir(id, cookie);
+
+    expect(resposta.status).toBe(200);
+    expect(resposta.body.tecnico.id).toBe(admin.id);
+  });
+});
