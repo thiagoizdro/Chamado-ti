@@ -3,7 +3,6 @@ import { createBrowserRouter } from 'react-router';
 
 import { IrParaPaginaInicial } from './components/IrParaPaginaInicial';
 import { Layout } from './components/Layout';
-import { PaginaEmConstrucao } from './components/PaginaEmConstrucao';
 import { RotaProtegida } from './components/RotaProtegida';
 import {
   EQUIPE_TECNICA,
@@ -42,7 +41,16 @@ export const router = createBrowserRouter([
       { index: true, element: <IrParaPaginaInicial /> },
       {
         path: 'dashboard',
-        element: protegida(SO_ADMIN, <PaginaEmConstrucao titulo="Dashboard" fase={6} />),
+        element: protegida(SO_ADMIN),
+        children: [
+          {
+            index: true,
+            // Carrega sob demanda: só o dashboard usa o Recharts (a maior
+            // dependência) e só o admin o acessa. Os outros perfis não baixam esse código.
+            lazy: () =>
+              import('./pages/DashboardPage').then((modulo) => ({ Component: modulo.default })),
+          },
+        ],
       },
       {
         path: 'minha-fila',
