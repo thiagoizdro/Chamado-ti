@@ -5,7 +5,17 @@ import { IrParaPaginaInicial } from './components/IrParaPaginaInicial';
 import { Layout } from './components/Layout';
 import { PaginaEmConstrucao } from './components/PaginaEmConstrucao';
 import { RotaProtegida } from './components/RotaProtegida';
-import { EQUIPE_TECNICA, SO_ADMIN, SO_TECNICO, TODOS_OS_PERFIS } from './lib/navegacao';
+import {
+  EQUIPE_TECNICA,
+  SO_ADMIN,
+  SO_TECNICO,
+  SOLICITANTE_E_ADMIN,
+  TODOS_OS_PERFIS,
+} from './lib/navegacao';
+import AbrirChamadoPage from './pages/chamados/AbrirChamadoPage';
+import DetalheChamadoPage from './pages/chamados/DetalheChamadoPage';
+import ListaChamadosPage from './pages/chamados/ListaChamadosPage';
+import MinhaFilaPage from './pages/chamados/MinhaFilaPage';
 import FormularioCategoriaPage from './pages/categorias/FormularioCategoriaPage';
 import ListaCategoriasPage from './pages/categorias/ListaCategoriasPage';
 import DetalheEquipamentoPage from './pages/equipamentos/DetalheEquipamentoPage';
@@ -36,11 +46,17 @@ export const router = createBrowserRouter([
       },
       {
         path: 'minha-fila',
-        element: protegida(SO_TECNICO, <PaginaEmConstrucao titulo="Minha fila" fase={4} />),
+        element: protegida(SO_TECNICO, <MinhaFilaPage />),
       },
       {
         path: 'chamados',
-        element: protegida(TODOS_OS_PERFIS, <PaginaEmConstrucao titulo="Chamados" fase={4} />),
+        element: protegida(TODOS_OS_PERFIS),
+        children: [
+          { index: true, element: <ListaChamadosPage /> },
+          // Técnico atende, não abre (a API também recusa).
+          { path: 'novo', element: protegida(SOLICITANTE_E_ADMIN, <AbrirChamadoPage />) },
+          { path: ':id', element: <DetalheChamadoPage /> },
+        ],
       },
       {
         path: 'equipamentos',
