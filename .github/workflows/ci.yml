@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Um push novo na mesma branch cancela a execução anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  qualidade:
+    name: Lint, typecheck, build e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    # Postgres de verdade para os testes de integração (mesma versão do Compose).
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: chamados
+          POSTGRES_PASSWORD: chamados
+          POSTGRES_DB: chamados_ti_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chamados -d chamados_ti_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # O prisma.config.ts exige a variável; o generate não conecta no banco.
+      DATABASE_URL: postgresql://chamados:chamados@localhost:5432/chamados_ti_test
+      DATABASE_URL_TEST: postgresql://chamados:chamados@localhost:5432/chamados_ti_test
+      PRISMA_HIDE_UPDATE_MESSAGE: 'true'
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      # O cliente Prisma não é versionado; lint e typecheck dependem dos tipos dele.
+      - name: Gerar cliente Prisma
+        run: npm run db:generate -w apps/api
+
+      - name: Formatação (Prettier)
+        run: npm run format:check
+
+      - name: Lint (ESLint)
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: |
+          npm run build -w apps/api
+          npm run build -w apps/web
+
+      # O setup global dos testes aplica as migrations no banco de teste.
+      - name: Testes da API
+        run: npm test -w apps/api
