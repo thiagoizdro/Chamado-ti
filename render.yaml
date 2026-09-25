@@ -1,0 +1,40 @@
+# Blueprint do Render: cria a API e o Postgres a partir deste arquivo
+# (Dashboard do Render > New > Blueprint > escolher o repositório).
+services:
+  - type: web
+    name: chamados-ti-api
+    runtime: node
+    plan: free
+    region: virginia
+    # O repositório inteiro é clonado; os comandos rodam a partir de apps/api.
+    # O npm reconhece o workspace e instala as dependências na raiz do monorepo.
+    rootDir: apps/api
+    # --include=dev: o build precisa do TypeScript e dos @types mesmo com NODE_ENV=production.
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && node dist/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: '24'
+      - key: NODE_ENV
+        value: production
+      - key: PRISMA_HIDE_UPDATE_MESSAGE
+        value: 'true'
+      - key: DATABASE_URL
+        fromDatabase:
+          name: chamados-ti-db
+          property: connectionString
+      # O Render gera um valor aleatório de 256 bits na criação.
+      - key: JWT_SECRET
+        generateValue: true
+      # URL do front na Vercel (pedida na criação do Blueprint).
+      - key: CORS_ORIGIN
+        sync: false
+
+databases:
+  - name: chamados-ti-db
+    plan: free
+    region: virginia
+    databaseName: chamados_ti
+    user: chamados
+    postgresMajorVersion: '16'
