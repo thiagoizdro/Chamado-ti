@@ -88,3 +88,22 @@ export function CampoSelect({
     </Envoltorio>
   );
 }
+
+type PropsCampoAreaTexto = Base & Omit<ComponentProps<'textarea'>, 'id'>;
+
+export function CampoAreaTexto({
+  id,
+  rotulo,
+  erro,
+  dica,
+  obrigatorio,
+  rows = 4,
+  ...props
+}: PropsCampoAreaTexto) {
+  const base = { id, rotulo, erro, dica, obrigatorio };
+  return (
+    <Envoltorio {...base}>
+      <textarea rows={rows} className={classeCampo} {...atributosAcessibilidade(base)} {...props} />
+    </Envoltorio>
+  );
+}

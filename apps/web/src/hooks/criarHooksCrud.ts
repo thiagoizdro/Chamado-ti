@@ -9,10 +9,12 @@ export function criarHooksCrud<TItem, TDados, TDetalhe = TItem>(
   chave: string,
   servico: ServicoCrud<TItem, TDados, TDetalhe>,
 ) {
-  function useLista(parametros: ParametrosLista) {
+  // habilitado = false segura a consulta (ex.: select que depende de outro campo).
+  function useLista(parametros: ParametrosLista, habilitado = true) {
     return useQuery({
       queryKey: [chave, 'lista', parametros],
       queryFn: () => servico.listar(parametros),
+      enabled: habilitado,
       // Mantém a página anterior na tela enquanto a próxima carrega.
       placeholderData: keepPreviousData,
     });
