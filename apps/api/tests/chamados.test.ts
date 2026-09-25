@@ -2,6 +2,7 @@ import request from 'supertest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { app } from '../src/app.js';
+import type { Prisma } from '../src/generated/prisma/client.js';
 import type { StatusChamado } from '../src/generated/prisma/enums.js';
 import { prisma } from '../src/lib/prisma.js';
 import { podeTransitar, TRANSICOES_STATUS } from '../src/modules/chamados/status.js';
@@ -383,5 +384,102 @@ describe('comentários', () => {
       .send({ texto: 'Mais uma coisa' });
 
     expect(resposta.status).toBe(422);
+  });
+});
+
+describe('filtros da listagem', () => {
+  // Cria direto no banco para controlar data, escola e equipamento.
+  async function novoChamado(dados: Partial<Prisma.ChamadoUncheckedCreateInput> = {}) {
+    return prisma.chamado.create({
+      data: {
+        titulo: 'Chamado',
+        descricao: 'Descrição do problema.',
+        escolaId,
+        categoriaId,
+        solicitanteId: solicitante.id,
+        ...dados,
+      },
+    });
+  }
+
+  async function idsFiltrados(query: string, cookie = cookieTecnico) {
+    const resposta = await request(app).get(`/api/chamados?${query}`).set('Cookie', cookie);
+    expect(resposta.status).toBe(200);
+    return (resposta.body.dados as { id: number }[]).map((chamado) => chamado.id).sort();
+  }
+
+  it('combina status, prioridade, categoria e técnico', async () => {
+    const outraCategoria = await prisma.categoria.create({ data: { nome: 'Rede' } });
+    const alvo = await novoChamado({
+      prioridade: 'ALTA',
+      status: 'EM_ATENDIMENTO',
+      tecnicoId: tecnico.id,
+    });
+    await novoChamado({ prioridade: 'ALTA', status: 'EM_ATENDIMENTO' });
+    await novoChamado({ prioridade: 'BAIXA', status: 'EM_ATENDIMENTO', tecnicoId: tecnico.id });
+    await novoChamado({
+      prioridade: 'ALTA',
+      status: 'EM_ATENDIMENTO',
+      tecnicoId: tecnico.id,
+      categoriaId: outraCategoria.id,
+    });
+
+    const ids = await idsFiltrados(
+      `status=EM_ATENDIMENTO&prioridade=ALTA,CRITICA&categoriaId=${categoriaId}&tecnicoId=${tecnico.id}`,
+    );
+
+    expect(ids).toEqual([alvo.id]);
+  });
+
+  it('busca sem diferenciar maiúsculas em título, descrição e patrimônio', async () => {
+    const equipamento = await prisma.equipamento.create({
+      data: { patrimonio: 'PAT-4242', tipo: 'Projetor', escolaId },
+    });
+    const porTitulo = await novoChamado({ titulo: 'Projetor sem imagem' });
+    const porDescricao = await novoChamado({ descricao: 'O PROJETOR da sala 2 desliga.' });
+    const porPatrimonio = await novoChamado({ equipamentoId: equipamento.id });
+    await novoChamado({ titulo: 'Impressora' });
+
+    expect(await idsFiltrados('q=projetor')).toEqual([porTitulo.id, porDescricao.id].sort());
+    expect(await idsFiltrados('q=pat-4242')).toEqual([porPatrimonio.id]);
+  });
+
+  it('filtra por período no fuso da rede, com a data final inclusiva', async () => {
+    // 30/09 às 23:30 em Brasília já é 01/10 em UTC.
+    const fimDoDia = await novoChamado({ abertoEm: new Date('2026-09-30T23:30:00-03:00') });
+    const inicioDoDia = await novoChamado({ abertoEm: new Date('2026-09-01T00:00:00-03:00') });
+    await novoChamado({ abertoEm: new Date('2026-08-31T23:59:00-03:00') });
+
+    expect(await idsFiltrados('de=2026-09-01&ate=2026-09-30')).toEqual(
+      [fimDoDia.id, inicioDoDia.id].sort(),
+    );
+    expect(await idsFiltrados('de=2026-10-01')).toEqual([]);
+  });
+
+  it('recusa período invertido e valores inválidos com 400', async () => {
+    const invertido = await request(app)
+      .get('/api/chamados?de=2026-09-30&ate=2026-09-01')
+      .set('Cookie', cookieTecnico);
+    const invalidos = await request(app)
+      .get('/api/chamados?status=FECHADO&de=30/09/2026')
+      .set('Cookie', cookieTecnico);
+
+    expect(invertido.status).toBe(400);
+    expect(invertido.body.erros).toHaveProperty('ate');
+    expect(invalidos.status).toBe(400);
+    expect(Object.keys(invalidos.body.erros)).toEqual(expect.arrayContaining(['de']));
+    expect(Object.keys(invalidos.body.erros).some((campo) => campo.startsWith('status'))).toBe(
+      true,
+    );
+  });
+
+  it('ignora o filtro de escola do solicitante', async () => {
+    const outraEscola = await criarEscola();
+    const daEscolaDele = await novoChamado();
+    await novoChamado({ escolaId: outraEscola.id });
+
+    const ids = await idsFiltrados(`escolaId=${outraEscola.id}`, cookieSolicitante);
+
+    expect(ids).toEqual([daEscolaDele.id]);
   });
 });
