@@ -9,6 +9,14 @@ export const TRANSICOES_STATUS: Record<StatusChamado, readonly StatusChamado[]> 
   RESOLVIDO: [],
 };
 
+// Rótulos usados nas mensagens de erro para o usuário.
+export const ROTULO_STATUS: Record<StatusChamado, string> = {
+  ABERTO: 'Aberto',
+  EM_ATENDIMENTO: 'Em atendimento',
+  AGUARDANDO_PECA: 'Aguardando peça',
+  RESOLVIDO: 'Resolvido',
+};
+
 export function podeTransitar(de: StatusChamado, para: StatusChamado): boolean {
   return TRANSICOES_STATUS[de].includes(para);
 }
