@@ -1,5 +1,7 @@
 # Chamados de TI
 
+[![CI](https://github.com/thiagoizdro/Chamado-ti/actions/workflows/ci.yml/badge.svg)](https://github.com/thiagoizdro/Chamado-ti/actions/workflows/ci.yml)
+
 Sistema full stack para escolas de uma rede de ensino abrirem chamados de TI (impressora parada, PC sem internet, projetor com defeito). A equipe técnica assume, atende e registra a solução; a gestão acompanha indicadores num dashboard.
 
 **🔗 Demo:** _link será adicionado após o deploy_ · credenciais de teste [logo abaixo](#credenciais-de-teste)
