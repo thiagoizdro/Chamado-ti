@@ -4,7 +4,7 @@
 
 Sistema full stack para escolas de uma rede de ensino abrirem chamados de TI (impressora parada, PC sem internet, projetor com defeito). A equipe técnica assume, atende e registra a solução; a gestão acompanha indicadores num dashboard.
 
-**🔗 Demo:** _link será adicionado após o deploy_ · credenciais de teste [logo abaixo](#credenciais-de-teste)
+**🔗 Demo:** https://chamado-ti-web.vercel.app · credenciais de teste [logo abaixo](#credenciais-de-teste)
 
 > ⏳ **A primeira requisição pode levar até 1 minuto.** A API roda no plano gratuito do Render, que desliga o serviço após 15 minutos sem uso. Se o login demorar ou falhar na primeira tentativa, aguarde alguns segundos e tente de novo.
 
